@@ -10,23 +10,36 @@
 
 #define GPIO_WATCH_PIN 2
 
-static char event_str[128];
-
-void gpio_event_string(char *buf, uint32_t events);
+static int num_press = 0;
+static int state = 0;
 
 void gpio_callback(uint gpio, uint32_t events) {
     // Put the GPIO event(s) that just happened into event_str
     // so we can print it
-    gpio_event_string(event_str, events);
-    printf("GPIO %d %s\n", gpio, event_str);
+    num_press++;
+    if(state == 0 ) {
+        state = 1;
+    } else {
+        state = 0;
+    }
+
+    gpio_put(3, state);
+    printf("Button Press #%d\n", num_press);
 }
 
 int main() {
     stdio_init_all();
 
-    printf("Hello GPIO IRQ\n");
+    while(!stdio_usb_connected()){
+        sleep_ms(100);
+    }
+
+    printf("Start\n");
     gpio_init(GPIO_WATCH_PIN);
-    gpio_set_irq_enabled_with_callback(GPIO_WATCH_PIN, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
+    gpio_init(3);
+    gpio_set_dir(3, GPIO_OUT);
+    gpio_put(3, state);
+    gpio_set_irq_enabled_with_callback(GPIO_WATCH_PIN, GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
 
     // Wait forever
     while (1);
@@ -39,24 +52,3 @@ static const char *gpio_irq_str[] = {
         "EDGE_FALL",  // 0x4
         "EDGE_RISE"   // 0x8
 };
-
-void gpio_event_string(char *buf, uint32_t events) {
-    for (uint i = 0; i < 4; i++) {
-        uint mask = (1 << i);
-        if (events & mask) {
-            // Copy this event string into the user string
-            const char *event_str = gpio_irq_str[i];
-            while (*event_str != '\0') {
-                *buf++ = *event_str++;
-            }
-            events &= ~mask;
-
-            // If more events add ", "
-            if (events) {
-                *buf++ = ',';
-                *buf++ = ' ';
-            }
-        }
-    }
-    *buf++ = '\0';
-}
