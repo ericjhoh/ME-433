@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
 
@@ -32,7 +33,7 @@ int main()
     stdio_init_all();
 
     // SPI initialisation. This example will use SPI at 1MHz.
-    spi_init(SPI_PORT, 1000);
+    spi_init(SPI_PORT, 20000000);
     gpio_set_function(PIN_MISO, GPIO_FUNC_SPI);
     gpio_set_function(PIN_CS,   GPIO_FUNC_SIO);
     gpio_set_function(PIN_SCK,  GPIO_FUNC_SPI);
@@ -43,18 +44,34 @@ int main()
     gpio_put(PIN_CS, 1);
     // For more examples of SPI use see https://github.com/raspberrypi/pico-examples/tree/master/spi
 
+
     while (true) {
-        printf("Hello, world!\n");
-        sleep_ms(1000);
+        
+        float t = 0;
+        float v_sin = 0;
+        float v_tri = 0;
+        for(int i = 0; i < 100; i++) {
 
-        // for(int i = 0; i < 100; i++) {
-        //     sleep(.01);
-        //     t = t+.01;
-        //     v = sin(t);
-        //     writeDac(int AorB, float Voltage)
-        // }
+            // writes the voltage of the sin wave output A
+            v_sin = 1.65 * (sin( 4 * M_PI * t) + 1);
+            writeDac(0, v_sin);
 
-        writeDac(0, 1);
+            //writes the voltage of the triangle wave to output B
+            if(i < 50) {
+                v_tri += 3.3/50; 
+            }
+            else {
+                v_tri -= 3.3/50;
+            }
+            writeDac(1, v_tri);
+            
+
+            //increments time
+            t = t + .01;
+            sleep_ms(.01);
+        }
+
+
     }
 }
 
