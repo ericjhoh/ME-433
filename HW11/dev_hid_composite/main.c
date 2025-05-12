@@ -26,12 +26,23 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h> 
 
 #include "bsp/board_api.h"
 #include "tusb.h"
 
 #include "usb_descriptors.h"
+#include "hardware/gpio.h"
 
+
+
+
+#define MODE 17
+#define LED 18
+#define UP 15
+#define DOWN 13
+#define LEFT 14
+#define RIGHT 16
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
@@ -63,6 +74,30 @@ int main(void)
   if (board_init_after_tusb) {
     board_init_after_tusb();
   }
+
+  gpio_init(MODE); // mode button
+  gpio_set_dir(MODE, GPIO_IN);
+  gpio_pull_up(MODE); // after initializing the pin as input
+
+  gpio_init(LED); // LED button
+  gpio_set_dir(LED, GPIO_OUT);
+  gpio_put(LED, 0);
+
+  gpio_init(RIGHT); // mode button
+  gpio_set_dir(RIGHT, GPIO_IN);
+  gpio_pull_up(RIGHT);
+
+  gpio_init(LEFT); // mode button
+  gpio_set_dir(LEFT, GPIO_IN);
+  gpio_pull_up(LEFT);
+
+  gpio_init(UP); // mode button
+  gpio_set_dir(UP, GPIO_IN);
+  gpio_pull_up(UP);
+
+  gpio_init(DOWN); // mode button
+  gpio_set_dir(DOWN, GPIO_IN);
+  gpio_pull_up(DOWN);
 
   while (1)
   {
@@ -138,10 +173,143 @@ static void send_hid_report(uint8_t report_id, uint32_t btn)
 
     case REPORT_ID_MOUSE:
     {
-      int8_t const delta = 5;
 
-      // no button, right + down, no scroll, no pan
-      tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta, delta, 0, 0);
+      static bool mode = 0;
+      if(!gpio_get(MODE)) {
+        mode = !mode;
+        gpio_put(LED, mode);
+      }
+
+
+      static int time_left = 0;
+      static int time_right = 0;
+      static int time_down = 0;
+      static int time_up = 0;
+
+
+      static int delta_left = 5;
+      static int delta_right = 5;
+      static int delta_down = 5;
+      static int delta_up = 5;
+
+      static bool left = false;
+      static bool right = false;
+      static bool down = false;
+      static bool up = false;
+
+      int8_t x = 0;
+      int8_t y = 0;
+
+      if(mode == 0) {
+        if(!gpio_get(LEFT)) {
+          if(left == true) {
+            if(time_left == 50) {
+              if(delta_left < 10) 
+                delta_left++;
+              time_left = 0;
+            }
+            else 
+              time_left++;
+            
+          }
+          else {
+            delta_left = 5;
+          }
+          left = true;
+          x -= delta_left;
+        } else {
+          time_left = 0;
+          left = false;
+        }
+
+        
+        if(!gpio_get(RIGHT)) {
+          if(right == true) {
+            if(time_right == 50) {
+              if(delta_right < 10) 
+                delta_right++;
+              time_right = 0;
+            }
+            else 
+              time_right++;
+            
+          }
+          else {
+            delta_right = 5;
+          }
+          right = true;
+          x += delta_right;
+        } else {
+          time_right = 0;
+          right = false;
+        }
+
+        if(!gpio_get(DOWN)) {
+          if(down == true) {
+            if(time_down == 50) {
+              if(delta_down < 10) 
+                delta_down++;
+              time_down = 0;
+            }
+            else 
+              time_down++;
+            
+          }
+          else {
+            delta_down = 5;
+          }
+          down = true;
+          y += delta_down;
+        } else {
+          time_down = 0;
+          down = false;
+        }
+
+        if(!gpio_get(UP)) {
+          if(up == true) {
+            if(time_up == 50) {
+              if(delta_up < 10) 
+                delta_up++;
+              time_up = 0;
+            }
+            else 
+              time_up++;
+            
+          }
+          else {
+            delta_up = 5;
+          }
+          up = true;
+          y -= delta_up;
+        } else {
+          time_up = 0;
+          up = false;
+        }
+
+
+        // no button, right + down, no scroll, no pan
+        tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, x, y, 0, 0);
+      }
+      else {
+        static float angle = 0.0;          // current angle in radians
+        const float angle_step = 0.1;      // how much to increment per call (controls speed)
+        const float radius = 20;          // controls size of circle
+
+        // calculate x and y deltas
+        int8_t dx = (int8_t)(radius * cosf(angle));
+        int8_t dy = (int8_t)(radius * sinf(angle));
+
+        // send the movement report
+        tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, dx, dy, 0, 0);
+
+        // increment angle for next step
+        angle += angle_step;
+
+        // keep angle in range [0, 2π] to avoid overflow
+        if (angle >= 2 * M_PI) {
+          angle -= 2 * M_PI;
+        }
+      }
     }
     break;
 
