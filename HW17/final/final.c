@@ -16,6 +16,8 @@
 #define PWMB 19
 #define DIRB 18
 
+#define START 20
+
 #define WRAP 50000
 
 void init_PWM_DIR() {
@@ -24,7 +26,10 @@ void init_PWM_DIR() {
 
     gpio_init(DIRA);
     gpio_init(DIRB);
-    
+
+    gpio_init(START);
+    gpio_set_dir(START, GPIO_IN);
+
     gpio_set_dir(DIRA, GPIO_OUT);
     gpio_set_dir(DIRB, GPIO_OUT);
 
@@ -50,15 +55,15 @@ void init_PWM_DIR() {
 
 int main()
 {
+
+    // initialize pins
     stdio_init_all();
-
-    while (!stdio_usb_connected()) {
-        sleep_ms(100);
-    }
-    //printf("Hello, camera!\n");
-
     init_camera_pins();
     init_PWM_DIR();
+
+
+    // wait until start button is pressed
+    while(gpio_get(START) != 0) {}
 
     while (true) {
 
@@ -69,49 +74,56 @@ int main()
         
         // returns the column that represents the center of mass of the 
         // brightest pixels in the middle row of the picture
-        int com = findLine(IMAGESIZEY / 2); 
+        int com = findLine(IMAGESIZEY / 2);
+
+        // same as above but the row 25% from the top --> looks ahead
+        int com_top = findLine(IMAGESIZEY / 4); 
 
         // IMAGESIZEX --> 80 pixel wide is max --> center is 40 
-
         int offset = com - IMAGESIZEX/2; // the displacement the line is from the center
         // if negative --> line is to the left of the robot --> turn left
         // if positive --> line is to the right of the robot --> turn right
 
+
+        int change = com_top - com; // change in the center of mass
+        // if negative turn left
+        // if positive turn right
+
+
         // max offset = 40
 
-        printf("Com: %d\nOffset:%d\n\n", com, offset);
-
-        // max speed is wrap/2
-        // speed in between 10 and 30 is linear function
-        // 
+        // printf("Com: %d\nOffset:%d\n\n", com, offset);
+        // printf("Com top: %d\nOffset:%d\n\n", com_top, offset);
+        // printf("COM: %d\nCom_top: %d\n\n", com, com_top);
 
         // B is right
         // A is left
-
         // move straight
         if(offset > -5 && offset < 5) {
-            pwm_set_gpio_level(PWMA, WRAP / 2); // set the duty cycle to 50%
+            pwm_set_gpio_level(PWMA, WRAP / 2); 
             pwm_set_gpio_level(PWMB, WRAP / 2);
         }
         else {
             // turn left --> decrease speed of left
+            
             if(offset < 0) {
+                pwm_set_gpio_level(PWMB, WRAP / 4);
                 if(offset < -30) {
-                    pwm_set_gpio_level(PWMA, WRAP / 6);
+                    pwm_set_gpio_level(PWMA, WRAP / 8);
                 }
                 else {
-                    float duty = .5 - (1/75.0)*(-1*offset - 5);
+                    float duty = .25 - (1.0/8.0/25.0)*(-1*offset - 5);
                     pwm_set_gpio_level(PWMA, WRAP * duty);
                 }
             }
-
             //turn right --> decrease speed of right
             else {
+                pwm_set_gpio_level(PWMA, WRAP / 4); 
                  if(offset > 30) {
-                    pwm_set_gpio_level(PWMB, WRAP / 6);
+                    pwm_set_gpio_level(PWMB, WRAP / 8);
                 }
                 else {
-                    float duty = .5 - (1/75.0)*(offset - 5);
+                    float duty = .25 - (1.0/8.0/25.0)*(offset - 5);
                     pwm_set_gpio_level(PWMB, WRAP * duty);
                 }
 
