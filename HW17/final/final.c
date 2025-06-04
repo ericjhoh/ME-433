@@ -77,7 +77,7 @@ int main()
         int com = findLine(IMAGESIZEY / 2);
 
         // same as above but the row 25% from the top --> looks ahead
-        int com_top = findLine(IMAGESIZEY / 4); 
+        //int com_top = findLine(IMAGESIZEY / 4); 
 
         // IMAGESIZEX --> 80 pixel wide is max --> center is 40 
         int offset = com - IMAGESIZEX/2; // the displacement the line is from the center
@@ -85,7 +85,7 @@ int main()
         // if positive --> line is to the right of the robot --> turn right
 
 
-        int change = com_top - com; // change in the center of mass
+        //int change = com_top - com; // change in the center of mass
         // if negative turn left
         // if positive turn right
 
@@ -109,10 +109,10 @@ int main()
             if(offset < 0) {
                 pwm_set_gpio_level(PWMB, WRAP / 4);
                 if(offset < -30) {
-                    pwm_set_gpio_level(PWMA, WRAP / 8);
+                    pwm_set_gpio_level(PWMA, 0);
                 }
                 else {
-                    float duty = .25 - (1.0/8.0/25.0)*(-1*offset - 5);
+                    float duty = .25 - (1.0/4.0/25.0)*(-1*offset - 5);
                     pwm_set_gpio_level(PWMA, WRAP * duty);
                 }
             }
@@ -120,10 +120,10 @@ int main()
             else {
                 pwm_set_gpio_level(PWMA, WRAP / 4); 
                  if(offset > 30) {
-                    pwm_set_gpio_level(PWMB, WRAP / 8);
+                    pwm_set_gpio_level(PWMB, 0);
                 }
                 else {
-                    float duty = .25 - (1.0/8.0/25.0)*(offset - 5);
+                    float duty = .25 - (1.0/4.0/25.0)*(offset - 5);
                     pwm_set_gpio_level(PWMB, WRAP * duty);
                 }
 
