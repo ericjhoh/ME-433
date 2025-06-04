@@ -48,7 +48,8 @@ pico_enable_stdio_usb(final 1)
 target_link_libraries(final
         pico_stdlib
         hardware_i2c
-        hardware_pwm)
+        hardware_pwm
+        hardware_clocks)
 
 # Add the standard include files to the build
 target_include_directories(final PRIVATE

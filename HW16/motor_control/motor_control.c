@@ -67,8 +67,8 @@ int main() {
 
    
     while(1) {
-        pwm_set_gpio_level(PWMA, WRAP / 2); // set the duty cycle to 50%
-        pwm_set_gpio_level(PWMB, WRAP / 2); // set the duty cycle to 50%
+        pwm_set_gpio_level(PWMA, WRAP / 10); // set the duty cycle to 50%
+        pwm_set_gpio_level(PWMB, WRAP / 10); // set the duty cycle to 50%
         sleep_ms(3000);
         pwm_set_gpio_level(PWMA, WRAP); // set the duty cycle to 50%
         pwm_set_gpio_level(PWMB, WRAP); // set the duty cycle to 50%
